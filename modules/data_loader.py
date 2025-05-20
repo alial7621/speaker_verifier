@@ -6,10 +6,12 @@ from torch.utils.data import Dataset, DataLoader
 import torch
 import torchaudio
 from torchaudio import transforms
+from audiomentations import Compose, AddGaussianNoise, RoomReverberation, SpeedChange
+
 
 class TrainDataset(Dataset):
     def __init__(self, root_path, speakers_file_path, samples_per_epoch=30000, loss_type='constrative',
-                 sample_rate=16000, duration=3, vad=False):
+                 sample_rate=16000, duration=3, vad=False, augmentations=False):
         """
         Constructor for TrainDataset.
 
@@ -29,6 +31,8 @@ class TrainDataset(Dataset):
             duration of audio files in seconds
         vad : bool, optional
             whether to use voice activity detection on audio files
+        augmentations : bool, optional
+            whether to use augmentations on audio files
 
         Returns
         -------
@@ -41,6 +45,14 @@ class TrainDataset(Dataset):
         self.sample_rate = sample_rate
         self.fixed_length = int(sample_rate * duration)
         self.vad = vad
+        if augmentations:
+            self.augmentations = Compose([
+                AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.015, p=0.5),
+                RoomReverberation(p=0.5),
+                SpeedChange(min_factor=0.9, max_factor=1.1, p=0.5)
+            ])
+        else:
+            self.augmentations = None
         
         assert self.loss_type in ['constrative', 'triplet']
 
@@ -101,6 +113,9 @@ class TrainDataset(Dataset):
             pad_len = self.fixed_length - waveform.shape[1]
             waveform = torch.nn.functional.pad(waveform, (0, pad_len))
 
+        if self.augmentations is not None:
+            waveform = self.augmentations(waveform.numpy()).to_tensor()
+
         return waveform
     
     def __getitem__(self, index):
@@ -113,8 +128,10 @@ class TrainDataset(Dataset):
         
         elif self.loss_type == 'triplet':
             anchor, positive, negative = self._get_triplet_pair()
-            
-            return self._preprocess(anchor), self._preprocess(positive), self._preprocess(negative)
+            anchor = self._preprocess(anchor)
+            positive = self._preprocess(positive)
+            negative = self._preprocess(negative)
+            return anchor, positive, negative
         
     def _get_constrative_pair(self, pos_or_neg):
         if pos_or_neg:
@@ -187,5 +204,43 @@ class ValidDataset(Dataset):
 
         return waveform1, waveform2, label
     
-                
+def get_data_loaders(root_path, samples_per_epoch=30000, loss_type='constrative',
+                     sample_rate=16000, duration=3, vad=False, augmentations=False,
+                     batch_size=32, num_workers=4):
+     
+    # Create datasets
+    train_dataset = TrainDataset(
+        root_path=root_path,
+        speakers_file_path=os.path.join(root_path, "train_speakers.txt"),
+        samples_per_epoch=samples_per_epoch,
+        loss_type=loss_type,
+        sample_rate=sample_rate,
+        duration=duration,
+        vad=vad, 
+        augmentations=augmentations
+    )
+        
+    valid_dataset = ValidDataset(
+        dataset_path=os.path.join(root_path, "validation.csv"),
+        sample_rate=sample_rate, 
+        duration=duration, 
+        vad=vad
+    )
+    
+    # Create data loaders
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers
+    )
+    
+    valid_loader = DataLoader(
+        valid_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers
+    )
+    
+    return train_loader, valid_loader                
 
