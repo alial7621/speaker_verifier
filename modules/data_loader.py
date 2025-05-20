@@ -4,14 +4,43 @@ import random
 import pandas as pd
 from torch.utils.data import Dataset, DataLoader
 import torch
+import torchaudio
 from torchaudio import transforms
 
 class TrainDataset(Dataset):
-    def __init__(self, root_path, speakers_file_path, samples_per_epoch=30000, loss_type='constrative'):
+    def __init__(self, root_path, speakers_file_path, samples_per_epoch=30000, loss_type='constrative',
+                 sample_rate=16000, duration=3, vad=False):
+        """
+        Constructor for TrainDataset.
+
+        Parameters
+        ----------
+        root_path : str
+            root directory where speaker folders are located
+        speakers_file_path : str
+            path to a text file containing speaker IDs
+        samples_per_epoch : int, optional
+            number of samples to draw from the dataset per epoch
+        loss_type : str, optional
+            the type of loss to use, either 'constrative' or 'triplet'
+        sample_rate : int, optional
+            sample rate of audio files
+        duration : int, optional
+            duration of audio files in seconds
+        vad : bool, optional
+            whether to use voice activity detection on audio files
+
+        Returns
+        -------
+        None
+        """
         self.root_path = root_path
         self.samples_per_epoch = samples_per_epoch
         self.pos_speaker_to_files, self.all_speakers_to_files = self._read_speaker_dict(root_path, speakers_file_path)
         self.loss_type = loss_type
+        self.sample_rate = sample_rate
+        self.fixed_length = int(sample_rate * duration)
+        self.vad = vad
         
         assert self.loss_type in ['constrative', 'triplet']
 
@@ -54,13 +83,38 @@ class TrainDataset(Dataset):
     def __len__(self):
         return self.samples_per_epoch
     
+    def _preprocess(self, path):
+        waveform, sr = torchaudio.load(path)
+        if sr != self.sample_rate:
+            resampler = transforms.Resample(orig_freq=sr, new_freq=self.sample_rate)
+            waveform = resampler(waveform)
+
+        if self.vad:
+            waveform, _ = torchaudio.sox_effects.apply_effects_tensor(
+                waveform, self.sample_rate, [['vad', '-t', '3'], ['rate', str(self.sample_rate)]])
+        else:
+            waveform = waveform / waveform.abs().max()
+
+        if waveform.shape[1] > self.fixed_length:
+            waveform = waveform[:, :self.fixed_length]
+        elif waveform.shape[1] < self.fixed_length:
+            pad_len = self.fixed_length - waveform.shape[1]
+            waveform = torch.nn.functional.pad(waveform, (0, pad_len))
+
+        return waveform
+    
     def __getitem__(self, index):
         if self.loss_type == 'constrative':
             # random boolean to choose positive pair or negative pair
             pos_or_neg = random.choice([True, False])
             file1, file2, label = self._get_constrative_pair(pos_or_neg)
+            
+            return self._preprocess(file1), self._preprocess(file2), label
+        
         elif self.loss_type == 'triplet':
             anchor, positive, negative = self._get_triplet_pair()
+            
+            return self._preprocess(anchor), self._preprocess(positive), self._preprocess(negative)
         
     def _get_constrative_pair(self, pos_or_neg):
         if pos_or_neg:
