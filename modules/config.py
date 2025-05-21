@@ -21,7 +21,7 @@ def get_argparser():
                         help="Use Augmentation for audio samples during training")
     
     # Model
-    parser.add_argument("--in_channel", type=int, default=80, help="Input channel to the model")
+    parser.add_argument("--in_channels", type=int, default=80, help="Input channel to the model")
     parser.add_argument("--channels", type=int, default=512, help="Intermediate channels")
     parser.add_argument("--embd_dim", type=int, default=192, help="Output embed size")
     
@@ -39,6 +39,9 @@ def get_argparser():
     # Optimizer and scheduler
     parser.add_argument("--loss_type", type=str, default="contrastive",
                         help="Choose the loss function, possible inputs:[contrastive, triplet, cosineemb]")
+    parser.add_argument("--margin_loss", type=float, default=0.2,
+                        help="The margin, using in the loss function")
+    parser.add_argument("--eer_thresh", type=float, default=None, help="Threshold for EER metric")
     parser.add_argument("--lr", type=float, default=1e-2,
                         help="Initial learning rate for scheduler")
     parser.add_argument("--final_lr", type=float, default=1e-6,
