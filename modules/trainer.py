@@ -18,6 +18,7 @@ class VerifierTrainer:
         self.device = device
         self.current_epoch = 0
         self.epochs = config.epochs
+        self.best_eer = 1.01
 
         # Initialize metrics
         self.metrics = {
@@ -121,7 +122,17 @@ class VerifierTrainer:
             torch.save(self.model.state_dict(), os.path.join(checkpoint_path, "best.pt"))
 
     def load_checkpoint(self, checkpoint_path):
-        pass
+        print("A checkpoint detected")
+        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        self.current_epoch = checkpoint["epoch"]
+        self.model = checkpoint["model_state"]
+        self.optimizer = checkpoint["optim_state"]
+        self.scheduler = checkpoint["scheduler_state"]
+        self.metrics = checkpoint['metrics']
+
+        self.best_eer = min(self.metrics['eer'])
+        print("The checkpoint loaded")
+        print(f"Starting from epoch {self.current_epoch}\n")
 
     def _contrastive_loss(self, emb1, emb2, label, margin=0.2):        
         """
