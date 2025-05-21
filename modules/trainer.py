@@ -1,3 +1,6 @@
+import os
+import time
+from tqdm import tqdm
 import torch
 import torch.optim as optim
 import torch.nn as nn
@@ -28,6 +31,7 @@ class VerifierTrainer:
             channels=config.channels,
             embd_dim=config.embd_dim
         ).to(device)
+        self._num_parameters(self)
 
         # Initialize Optimizer
         self.optimizer = optim.Adam(
@@ -59,7 +63,39 @@ class VerifierTrainer:
             raise ValueError("Invalid input provided")
         
     def train(self, train_loader, val_loader=None): 
-        pass
+        """
+        Train the speaker verifier model.
+        
+        Args:
+            train_loader: DataLoader for training data
+            val_loader: DataLoader for validation data (optional)
+        """
+        
+        start_time = time.time()
+        
+        for epoch in range(self.current_epoch, self.config.epochs):
+            self.current_epoch = epoch
+            
+            # Training epoch
+            self._train_epoch(train_loader)
+            
+            # Validation
+            if val_loader is not None:
+                self._validate(val_loader)
+            
+            # Update learning rates
+            self.scheduler.step()
+            
+            # Save checkpoint
+            self.save_checkpoint()
+            
+            # Print epoch summary
+            elapsed = time.time() - start_time
+            print(f"Epoch {epoch+1}/{self.config.epochs} - "
+                  f"Time: {elapsed:.2f}s - "
+                  f"Loss: {self.metrics['loss'][-1]:.4f}")
+        
+        print(f"Training completed in {time.time() - start_time:.2f} seconds")
 
     def _train_epoch(self, train_loader):
         pass
@@ -67,7 +103,7 @@ class VerifierTrainer:
     def _validate(self, val_loader):        
         pass
 
-    def _save_checkpoint(self, epoch):
+    def _save_checkpoint(self):
         pass
 
     def load_checkpoint(self, checkpoint_path):
@@ -85,4 +121,14 @@ class VerifierTrainer:
         loss = torch.mean(loss)
 
         return loss
+    
+    def _num_parameters(self):
+        """
+        Print the number of total and trainable paramters in the model.
+        """
+        num_params = sum([params.numel() for params in self.model.parameters()])
+        num_trainables = sum([params.numel() for params in self.model.parameters() if params.requires_grad])
+        print(f"Number of total parameters in the generator model: {num_params}")
+        print(f"Number of trainable parameters in the generator model: {num_trainables}\n")
+
 
