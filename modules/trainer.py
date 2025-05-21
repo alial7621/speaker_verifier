@@ -50,7 +50,7 @@ class VerifierTrainer:
                                                               verbose=True)  
         
         # Initialize metric
-        self.metric = BinaryEER(thresholds=config.eer_thresh)
+        self.eer = BinaryEER(thresholds=config.eer_thresh)
 
         # Initialize loss function
         if config.loss_type == 'triplet':
@@ -93,7 +93,7 @@ class VerifierTrainer:
             elapsed = time.time() - start_time
             print(f"Epoch {epoch+1}/{self.config.epochs} - "
                   f"Time: {elapsed:.2f}s - "
-                  f"Loss: {self.metrics['loss'][-1]:.4f}")
+                  f"Loss: {self.metrics['g_loss'][-1]:.4f}")
         
         print(f"Training completed in {time.time() - start_time:.2f} seconds")
 
@@ -103,8 +103,22 @@ class VerifierTrainer:
     def _validate(self, val_loader):        
         pass
 
-    def _save_checkpoint(self):
-        pass
+    def _save_checkpoint(self, mode='last'):
+        """ 
+        save a checkpoint of the models
+        """
+        checkpoint_path = os.path.join(self.config.checkpoint_dir, "models")
+        if mode == 'last':
+            state = {
+                "epoch": self.current_epoch,
+                "model_state": self.model.state_dict(),
+                "optim_state": self.optimizer.state_dict(),
+                "scheduler_state": self.scheduler.state_dict(),
+                "metrics": self.metrics,
+            }
+            torch.save(state, os.path.join(checkpoint_path, "last.pt"))
+        elif mode == 'best':
+            torch.save(self.model.state_dict(), os.path.join(checkpoint_path, "best.pt"))
 
     def load_checkpoint(self, checkpoint_path):
         pass
