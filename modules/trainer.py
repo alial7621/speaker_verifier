@@ -36,7 +36,7 @@ class VerifierTrainer:
 
         # Initialize Optimizer
         self.optimizer = optim.Adam(
-            self.generator.parameters(),
+            self.model.parameters(),
             lr=self.config.lr,
             betas=(self.config.momentum1, self.config.momentum2)
         )
@@ -99,7 +99,53 @@ class VerifierTrainer:
         print(f"Training completed in {time.time() - start_time:.2f} seconds")
 
     def _train_epoch(self, train_loader):
-        pass
+        self.model.train()
+        
+        epoch_loss = 0
+        
+        pbar = tqdm(train_loader, desc=f"Epoch {self.current_epoch+1}")
+        for input_data in pbar:
+            self.optimizer.zero_grad()
+            if self.config.loss_type == 'triplet':
+                # Get data
+                anchor_batch = input_data[0].to(self.device)
+                positive_batch = input_data[1].to(self.device)
+                negative_batch = input_data[2].to(self.device)
+
+                # Get model output
+                anchor_output = self.model(anchor_batch)
+                positive_output = self.model(positive_batch)
+                negative_output = self.model(negative_batch)
+
+                # Calcualte loss
+                loss = self.loss_func(anchor_output, positive_output, negative_output)
+            
+            else:
+                # Get data
+                audio_batch1 = input_data[0].to(self.device)
+                audio_batch2 = input_data[1].to(self.device)
+                labels = input_data[2].to(self.device)
+
+                # Get model output
+                audio_outputs1 = self.model(audio_batch1)
+                audio_outputs2 = self.model(audio_batch2)
+
+                # Calcualte loss
+                loss = self.loss_func(audio_outputs1, audio_outputs2, labels)
+
+            
+            # train the generator model
+            loss.backward()
+            self.optimizer.step()
+
+            epoch_loss += loss.item()
+            # Update progress bar
+            pbar.set_postfix({
+                'loss': loss.item()
+            })
+
+        # Record metrics
+        self.metrics['loss'].append(epoch_loss / len(train_loader))
 
     def _validate(self, val_loader):        
         pass
