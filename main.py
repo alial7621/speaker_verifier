@@ -17,19 +17,20 @@ def train(config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # Create directories
-    os.makedirs(config.checkpoint_dir, "models", exist_ok=True)
+    os.makedirs(config.checkpoint_dir, exist_ok=True)
     os.makedirs(os.path.join(config.checkpoint_dir, "models"), exist_ok=True)
     os.makedirs(os.path.join(config.checkpoint_dir, "plots"), exist_ok=True)
 
     # prepare datalaoders
     train_loader, val_loader = get_data_loaders(config.dataset_dir, 
-                                                  samples_per_epoch=config.samples_per_epoch,
-                                                  loss_type=config.loss_type,
-                                                  sample_rate=config.sample_rate,
-                                                  duration=config.duration, 
-                                                  vad=config.vad, 
-                                                  augmentations=config.augmentations,
-                                                  batch_size=config.batch_size)
+                                                samples_per_epoch=config.samples_per_epoch,
+                                                loss_type=config.loss_type,
+                                                sample_rate=config.sample_rate,
+                                                duration=config.duration, 
+                                                vad=config.vad, 
+                                                augmentations=config.augmentations,
+                                                batch_size=config.batch_size,
+                                                mfcc_feat_dim=config.mfcc_feat_dim)
     
     # Initialize trainer
     trainer = VerifierTrainer(config, device)
