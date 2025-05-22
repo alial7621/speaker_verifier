@@ -22,7 +22,7 @@ def train(config):
     os.makedirs(os.path.join(config.checkpoint_dir, "plots"), exist_ok=True)
 
     # prepare datalaoders
-    train_loader, valid_loader = get_data_loaders(config.dataset_dir, 
+    train_loader, val_loader = get_data_loaders(config.dataset_dir, 
                                                   samples_per_epoch=config.samples_per_epoch,
                                                   loss_type=config.loss_type,
                                                   sample_rate=config.sample_rate,
@@ -39,7 +39,7 @@ def train(config):
         trainer.load_checkpoint(config.checkpoint_path)
         
     # Train model
-    trainer.train(train_loader, valid_loader)
+    trainer.train(train_loader, val_loader)
     
     # Plot metrics
     plot_metrics(trainer.metrics, save_path=os.path.join(config.checkpoint_dir, "plots"))
