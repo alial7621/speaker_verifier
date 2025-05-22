@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 import torch
 import torchaudio
 from torchaudio import transforms
-from audiomentations import Compose, AddGaussianNoise, RoomReverberation, SpeedChange
+from audiomentations import Compose, AddGaussianNoise, Gain
 
 
 class TrainDataset(Dataset):
@@ -50,8 +50,7 @@ class TrainDataset(Dataset):
         if augmentations:
             self.augmentations = Compose([
                 AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.015, p=0.5),
-                RoomReverberation(p=0.5),
-                SpeedChange(min_factor=0.9, max_factor=1.1, p=0.5)
+                Gain(p=0.5)
             ])
             self.spec_aug = torch.nn.Sequential(
                 transforms.FrequencyMasking(freq_mask_param=10),
@@ -97,10 +96,11 @@ class TrainDataset(Dataset):
         # one for just positive pairs, one for negative pairs
         pos_speaker_to_files = {}
         all_speakers_to_files = {}
+        data_path = os.path.join(root_path, 'data')
 
         # Collect audio file paths for each speaker
         for speaker_id in speaker_ids:
-            speaker_dir = os.path.join(root_path, speaker_id)
+            speaker_dir = os.path.join(data_path, speaker_id)
             if os.path.isdir(speaker_dir):
                 files = [os.path.join(speaker_dir, f) for f in os.listdir(speaker_dir) if f.endswith('.mp3')]
                 if len(files) >= 2:
@@ -148,7 +148,8 @@ class TrainDataset(Dataset):
 
         # apply augmentations if necessary
         if self.augmentations is not None:
-            waveform = self.augmentations(waveform.numpy()).to_tensor()
+            waveform = self.augmentations(samples=waveform.numpy(), sample_rate=self.sample_rate)
+            waveform = torch.tensor(waveform)
         
         # compute MFCC
         mfcc = self.mfcc_transform(waveform)
