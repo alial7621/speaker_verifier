@@ -189,8 +189,9 @@ class VerifierTrainer:
             labels = input_data[2].to(self.device)
 
             # Get model output
-            audio_outputs1 = self.model(audio_batch1)
-            audio_outputs2 = self.model(audio_batch2)
+            with torch.no_grad():
+                audio_outputs1 = self.model(audio_batch1)
+                audio_outputs2 = self.model(audio_batch2)
 
             # calculate similarity
             similarity = nn.functional.cosine_similarity(audio_outputs1, audio_outputs2)
