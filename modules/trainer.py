@@ -6,7 +6,7 @@ import torch.optim as optim
 import torch.nn as nn
 from torchmetrics.classification import BinaryEER
 
-from model import ECAPA_TDNN
+from modules.model import ECAPA_TDNN
 
 class VerifierTrainer:
     """
@@ -39,7 +39,7 @@ class VerifierTrainer:
             channels=config.channels,
             embd_dim=config.embd_dim
         ).to(device)
-        self._num_parameters(self)
+        self._num_parameters()
 
         # Initialize Optimizer
         self.optimizer = optim.Adam(
@@ -122,9 +122,11 @@ class VerifierTrainer:
             self.optimizer.zero_grad()
             if self.config.loss_type == 'triplet':
                 # Get data
-                anchor_batch = input_data[0].to(self.device)
-                positive_batch = input_data[1].to(self.device)
-                negative_batch = input_data[2].to(self.device)
+                # input_data shape: [batch_size, 1, feat_dim, seq_len]
+                # model input shape: [batch_size, seq_len, feat_dim]
+                anchor_batch = (input_data[0].squeeze(1).permute(0, 2, 1)).to(self.device)
+                positive_batch = (input_data[1].squeeze(1).permute(0, 2, 1)).to(self.device)
+                negative_batch = (input_data[2].squeeze(1).permute(0, 2, 1)).to(self.device)
 
                 # Get model output
                 anchor_output = self.model(anchor_batch)
@@ -136,8 +138,10 @@ class VerifierTrainer:
             
             else:
                 # Get data
-                audio_batch1 = input_data[0].to(self.device)
-                audio_batch2 = input_data[1].to(self.device)
+                # input_data shape: [batch_size, 1, feat_dim, seq_len]
+                # model input shape: [batch_size, seq_len, feat_dim]
+                audio_batch1 = (input_data[0].squeeze(1).permute(0, 2, 1)).to(self.device)
+                audio_batch2 = (input_data[1].squeeze(1).permute(0, 2, 1)).to(self.device)
                 labels = input_data[2].to(self.device)
 
                 # Get model output
@@ -175,8 +179,10 @@ class VerifierTrainer:
         for input_data in tqdm(val_loader):
 
             # Get data
-            audio_batch1 = input_data[0].to(self.device)
-            audio_batch2 = input_data[1].to(self.device)
+            # input_data shape: [batch_size, 1, feat_dim, seq_len]
+            # model input shape: [batch_size, seq_len, feat_dim]
+            audio_batch1 = (input_data[0].squeeze(1).permute(0, 2, 1)).to(self.device)
+            audio_batch2 = (input_data[1].squeeze(1).permute(0, 2, 1)).to(self.device)
             labels = input_data[2].to(self.device)
 
             # Get model output
