@@ -1,12 +1,14 @@
 import os
+import warnings
 
-import torch
 import numpy as np
+import torch
 
 from modules import config
 from modules.data_loader import get_data_loaders
 from modules.trainer import VerifierTrainer
 from utils.util import plot_metrics
+
 
 def train(config):
     
@@ -55,6 +57,9 @@ if __name__ == "__main__":
     
     parser = config.get_argparser()
     args = parser.parse_args()
+
+    # filter UserWarning
+    warnings.filterwarnings("ignore", category=UserWarning)
     
     if args.mode == "train":
         train(args)

@@ -1,12 +1,14 @@
 import os
 import time
-from tqdm import tqdm
+
 import torch
-import torch.optim as optim
 import torch.nn as nn
+import torch.optim as optim
 from torchmetrics.classification import BinaryEER
+from tqdm import tqdm
 
 from modules.model import ECAPA_TDNN
+
 
 class VerifierTrainer:
     """
@@ -95,13 +97,14 @@ class VerifierTrainer:
             self.scheduler.step(self.best_eer)
             
             # Save checkpoint
-            self.save_checkpoint(mode='last')
+            self._save_checkpoint(mode='last')
             
             # Print epoch summary
             elapsed = time.time() - start_time
             print(f"Epoch {epoch+1}/{self.config.epochs} - "
                   f"Time: {elapsed:.2f}s - "
-                  f"Loss: {self.metrics['loss'][-1]:.4f}")
+                  f"Loss: {self.metrics['loss'][-1]:.4f} - "
+                  f"EER: {self.metrics['eer'][-1]:.4f}\n")
         
         print(f"Training completed in {time.time() - start_time:.2f} seconds")
 
@@ -117,7 +120,7 @@ class VerifierTrainer:
         
         epoch_loss = 0
         
-        pbar = tqdm(train_loader, desc=f"Epoch {self.current_epoch+1}")
+        pbar = tqdm(train_loader, desc=f"Epoch {self.current_epoch+1}/{self.config.epochs}")
         for input_data in pbar:
             self.optimizer.zero_grad()
             if self.config.loss_type == 'triplet':

@@ -1,12 +1,12 @@
-import os 
+import os
 import random
 
 import pandas as pd
-from torch.utils.data import Dataset, DataLoader
 import torch
 import torchaudio
+from audiomentations import AddGaussianNoise, Compose, Gain
+from torch.utils.data import DataLoader, Dataset
 from torchaudio import transforms
-from audiomentations import Compose, AddGaussianNoise, Gain
 
 
 class TrainDataset(Dataset):
@@ -330,7 +330,7 @@ class ValidDataset(Dataset):
         row = self.dataset_df.iloc[index]
         waveform1 = self._preprocess(row['audio_path_1'])
         waveform2 = self._preprocess(row['audio_path_2'])
-        label = torch.tensor(row['label'], dtype=torch.float)
+        label = torch.tensor(row['label'], dtype=torch.int)
 
         return waveform1, waveform2, label
     

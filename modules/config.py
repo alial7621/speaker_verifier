@@ -1,5 +1,6 @@
 import argparse
 
+
 def get_argparser():
     parser = argparse.ArgumentParser()
     
@@ -26,15 +27,15 @@ def get_argparser():
     
     # Model
     train_parser.add_argument("--mfcc_feat_dim", type=int, default=80, help="Input channel to the model")
-    train_parser.add_argument("--channels", type=int, default=512, help="Intermediate channels")
+    train_parser.add_argument("--channels", type=int, default=256, help="Intermediate channels")
     train_parser.add_argument("--embd_dim", type=int, default=192, help="Output embed size")
     
     # Train
     train_parser.add_argument("--no_manual_seed", dest="manual_seed", action="store_false", 
                               help="Whether use manual seed or not")
     train_parser.add_argument("--seed", type=int, default=72322)
-    train_parser.add_argument("--batch_size", type=int, default=8)
-    train_parser.add_argument("--samples_per_epoch", type=int, default=30000,
+    train_parser.add_argument("--batch_size", type=int, default=32)
+    train_parser.add_argument("--samples_per_epoch", type=int, default=20000,
                               help="number of the training samples per epoch")
     train_parser.add_argument("--epochs", type=int, default=50)
     train_parser.add_argument("--checkpoint_path", type=str, default="./checkpoints/models/last_model.pt",
