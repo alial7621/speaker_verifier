@@ -14,6 +14,13 @@ class VerifierTrainer:
     Handles the training process, checkpointing, and logging.
     """
     def __init__(self, config, device):
+        """
+        Initialize the VerifierTrainer.
+
+        Args:
+            config: configuration (input arguments)
+            device: device (cpu or gpu)
+        """
         self.config = config
         self.device = device
         self.current_epoch = 0
@@ -99,6 +106,13 @@ class VerifierTrainer:
         print(f"Training completed in {time.time() - start_time:.2f} seconds")
 
     def _train_epoch(self, train_loader):
+        """
+        Train the speaker verifier model for one epoch.
+        
+        Args:
+            train_loader: DataLoader for training data
+        """
+        
         self.model.train()
         
         epoch_loss = 0
@@ -148,6 +162,13 @@ class VerifierTrainer:
         self.metrics['loss'].append(epoch_loss / len(train_loader))
 
     def _validate(self, val_loader):        
+        """
+        Validate the speaker verifier model.
+        
+        Args:
+            val_loader: DataLoader for validation data
+        """
+
         self.model.eval()
         epoch_eer = 0
         
@@ -176,8 +197,12 @@ class VerifierTrainer:
 
     def _save_checkpoint(self, mode='last'):
         """ 
-        save a checkpoint of the models
+        Save a checkpoint of the models.
+
+        Args:
+            mode: last or best
         """
+
         checkpoint_path = os.path.join(self.config.checkpoint_dir, "models")
         if mode == 'last':
             state = {
@@ -192,6 +217,13 @@ class VerifierTrainer:
             torch.save(self.model.state_dict(), os.path.join(checkpoint_path, "best.pt"))
 
     def load_checkpoint(self, checkpoint_path):
+        """
+        Load a checkpoint of the models.
+
+        Args:
+            checkpoint_path: path to the checkpoint file
+        """
+
         print("A checkpoint detected")
         checkpoint = torch.load(checkpoint_path, map_location=self.device)
         self.current_epoch = checkpoint["epoch"]
@@ -207,6 +239,12 @@ class VerifierTrainer:
     def _contrastive_loss(self, emb1, emb2, label, margin=0.2):        
         """
         Computes Contrastive Loss
+
+        Args:
+            emb1: first embedding
+            emb2: second embedding
+            label: label
+            margin: margin
         """
 
         dist = torch.nn.functional.pairwise_distance(emb1, emb2)
@@ -225,5 +263,3 @@ class VerifierTrainer:
         num_trainables = sum([params.numel() for params in self.model.parameters() if params.requires_grad])
         print(f"Number of total parameters in the generator model: {num_params}")
         print(f"Number of trainable parameters in the generator model: {num_trainables}\n")
-
-
