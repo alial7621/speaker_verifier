@@ -25,7 +25,7 @@ def get_argparser():
                               help="Use Augmentation for audio samples during training")
     
     # Model
-    train_parser.add_argument("--in_channels", type=int, default=80, help="Input channel to the model")
+    train_parser.add_argument("--mfcc_feat_dim", type=int, default=80, help="Input channel to the model")
     train_parser.add_argument("--channels", type=int, default=512, help="Intermediate channels")
     train_parser.add_argument("--embd_dim", type=int, default=192, help="Output embed size")
     

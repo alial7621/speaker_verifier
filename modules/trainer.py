@@ -35,7 +35,7 @@ class VerifierTrainer:
 
         # Initialize Model
         self.model = ECAPA_TDNN(
-            in_channels=config.in_channels,
+            in_channels=config.mfcc_feat_dim,
             channels=config.channels,
             embd_dim=config.embd_dim
         ).to(device)
