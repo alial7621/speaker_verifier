@@ -77,7 +77,7 @@ def get_argparser():
                              help="Disable Voice Active Detection in preprocessing audio samples")
     test_parser.add_argument("--batch_size", type=int, default=8)
     test_parser.add_argument("--eer_thresh", type=float, default=None, help="Threshold for EER metric")
-    test_parser.add_argument("--single_pred", action="action_true", help="Single input prediction")
+    test_parser.add_argument("--single_pred", action="store_true", help="Single input prediction")
     test_parser.add_argument("--audio1", type=str, default=None, help="Use in single prediction mode")
     test_parser.add_argument("--audio2", type=str, default=None, help="Use in single prediction mode")
     
