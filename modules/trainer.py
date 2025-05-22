@@ -85,16 +85,16 @@ class VerifierTrainer:
                 self._validate(val_loader)
             
             # Update learning rates
-            self.scheduler.step()
+            self.scheduler.step(self.best_eer)
             
             # Save checkpoint
-            self.save_checkpoint()
+            self.save_checkpoint(mode='last')
             
             # Print epoch summary
             elapsed = time.time() - start_time
             print(f"Epoch {epoch+1}/{self.config.epochs} - "
                   f"Time: {elapsed:.2f}s - "
-                  f"Loss: {self.metrics['g_loss'][-1]:.4f}")
+                  f"Loss: {self.metrics['loss'][-1]:.4f}")
         
         print(f"Training completed in {time.time() - start_time:.2f} seconds")
 
@@ -148,7 +148,31 @@ class VerifierTrainer:
         self.metrics['loss'].append(epoch_loss / len(train_loader))
 
     def _validate(self, val_loader):        
-        pass
+        self.model.eval()
+        epoch_eer = 0
+        
+        for input_data in tqdm(val_loader):
+
+            # Get data
+            audio_batch1 = input_data[0].to(self.device)
+            audio_batch2 = input_data[1].to(self.device)
+            labels = input_data[2].to(self.device)
+
+            # Get model output
+            audio_outputs1 = self.model(audio_batch1)
+            audio_outputs2 = self.model(audio_batch2)
+
+            # calculate similarity
+            similarity = nn.functional.cosine_similarity(audio_outputs1, audio_outputs2)
+
+            # calculate eer
+            epoch_eer += self.eer(similarity, labels)
+
+        # Record metrics and save the model in case of the best result
+        epoch_eer = epoch_eer / len(val_loader)
+        self.metrics['eer'].append(epoch_eer)
+        if self.best_eer > epoch_eer:
+            self._save_checkpoint(mode='best')
 
     def _save_checkpoint(self, mode='last'):
         """ 
