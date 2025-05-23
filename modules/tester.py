@@ -17,6 +17,9 @@ class SpeakerVerification():
         self.device = device
         self.fixed_length = int(config.sample_rate * config.duration)
 
+        if config.vad:
+            self.vad_transform = torchaudio.transforms.Vad(sample_rate=config.sample_rate)
+
         # Load the model
         self.model_load()
         
@@ -48,7 +51,7 @@ class SpeakerVerification():
         self.model.eval()
 
     def get_spk_emb(self, audio_file):
-        audio_feat = self._preprocess(audio_file)
+        audio_feat = (self._preprocess(audio_file).permute(0, 2, 1)).to(self.device)
         with torch.no_grad():
             return self.model(audio_feat)
 
@@ -64,9 +67,9 @@ class SpeakerVerification():
             self.config.eer_thresh = 0.7
 
         if similarity > self.config.eer_thresh:
-            print("Verification Confirmed")
+            print(f"Verification Confirmed, Similarity Score: {similarity.cpu().numpy()[0]:02f}")
         else:
-            print("Verification Denied")
+            print(f"Verification Denied, Similarity Score: {similarity.cpu().numpy()[0]:02f}")
 
     def _preprocess(self, audio_file):
         """
@@ -88,8 +91,7 @@ class SpeakerVerification():
             waveform = resampler(waveform)
 
         if self.config.vad:
-            waveform, _ = torchaudio.sox_effects.apply_effects_tensor(
-                waveform, self.config.sample_rate, [['vad', '-t', '3'], ['rate', str(self.config.sample_rate)]])
+            waveform = self.vad_transform(waveform)
         else:
             waveform = waveform / waveform.abs().max()
 
@@ -179,7 +181,7 @@ class VerifierTester:
         eer = (fpr[eer_index] + fnr[eer_index]) / 2
         optimal_threshold = thresholds[eer_index]
         
-        self.optimal_threshold = optimal_threshold
+        self.optimal_threshold = [float(optimal_threshold)]
         print(f"Validation set EER: {eer}")
 
     def test(self, test_loader):
@@ -193,7 +195,12 @@ class VerifierTester:
         test_eer = 0
         
         # Initialize metric
-        binary_eer = BinaryEER(thresholds=self.optimal_threshold)
+        if self.config.find_optim_thresh:
+            binary_eer = BinaryEER(thresholds=self.optimal_threshold)
+        elif self.config.eer_thresh is not None:
+            binary_eer = BinaryEER(thresholds=[self.config.eer_thresh])
+        else:
+            binary_eer = BinaryEER()
         
         for input_data in tqdm(test_loader):
 
@@ -213,7 +220,7 @@ class VerifierTester:
             similarity = nn.functional.cosine_similarity(audio_outputs1, audio_outputs2)
 
             # calculate eer
-            test_eer += binary_eer(similarity, labels)
+            test_eer += binary_eer(similarity.to(self.device), labels)
 
         # Record metrics and save the model in case of the best result
         test_eer = test_eer / len(test_loader)
