@@ -38,12 +38,12 @@ def get_argparser():
     train_parser.add_argument("--samples_per_epoch", type=int, default=20000,
                               help="number of the training samples per epoch")
     train_parser.add_argument("--epochs", type=int, default=50)
-    train_parser.add_argument("--checkpoint_path", type=str, default="./checkpoints/models/last_model.pt",
+    train_parser.add_argument("--checkpoint_path", type=str, default="./checkpoints/models/last.pt",
                               help="Start from the last checkpoint. Always refer as last_model.pt")
     
     # Optimizer and scheduler
     train_parser.add_argument("--loss_type", type=str, default="contrastive",
-                              help="Choose the loss function, possible inputs:[contrastive, triplet, cosineemb]")
+                              help="Choose the loss function, possible inputs:[contrastive, triplet, cosineemb, aamsoftmax]")
     train_parser.add_argument("--margin_loss", type=float, default=0.2,
                               help="The margin, using in the loss function")
     train_parser.add_argument("--eer_thresh", type=float, default=None, help="Threshold for EER metric")
@@ -69,14 +69,14 @@ def get_argparser():
     test_parser.add_argument("--dataset_dir", type=str, default="./dataset", 
                              help="path to the testset csv file")
     test_parser.add_argument("--data_dir", type=str, default="/dataset/data")
-    test_parser.add_argument("--checkpoint", type=str, default="./checkpoints/models/best_model.pt")
+    test_parser.add_argument("--checkpoint", type=str, default="./checkpoints/models/best.pt")
     
     test_parser.add_argument("--sample_rate", type=int, default=16000, help="Audio sample rate")
     test_parser.add_argument("--duration", type=int, default=3,
                              help="Input audio files must have same duration (unit: seconds)")
     test_parser.add_argument("--no_vad", dest="vad", action="store_false", 
                              help="Disable Voice Active Detection in preprocessing audio samples")
-    test_parser.add_argument("--batch_size", type=int, default=8)
+    test_parser.add_argument("--batch_size", type=int, default=32)
     test_parser.add_argument("--eer_thresh", type=float, default=None, help="Threshold for EER metric")
     test_parser.add_argument("--single_pred", action="store_true", help="Single input prediction")
     test_parser.add_argument("--audio1", type=str, default=None, help="Use in single prediction mode")
