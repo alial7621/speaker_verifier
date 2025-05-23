@@ -7,8 +7,8 @@ import torch.optim as optim
 from torchmetrics.classification import BinaryEER
 from tqdm import tqdm
 
+from modules.aamsoftmax import AAMsoftmax
 from modules.model import ECAPA_TDNN
-from utils.util import AAMsoftmax
 
 class VerifierTrainer:
     """
@@ -214,6 +214,7 @@ class VerifierTrainer:
         epoch_eer = epoch_eer / len(val_loader)
         self.metrics['eer'].append(epoch_eer)
         if self.best_eer > epoch_eer:
+            self.best_eer = epoch_eer
             self._save_checkpoint(mode='best')
 
     def _save_checkpoint(self, mode='last'):
