@@ -63,7 +63,7 @@ def test(config):
         exit()
 
     tester = VerifierTester(config, device)
-    if config.eer_thresh is not None:
+    if not config.find_optim_thresh:
         test_loader = get_test_loader(
             config.dataset_dir, 
             sample_rate=config.sample_rate,
