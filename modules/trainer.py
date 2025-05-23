@@ -8,7 +8,7 @@ from torchmetrics.classification import BinaryEER
 from tqdm import tqdm
 
 from modules.model import ECAPA_TDNN
-
+from utils.util import AAMsoftmax
 
 class VerifierTrainer:
     """
@@ -69,6 +69,8 @@ class VerifierTrainer:
             self.loss_func = nn.CosineEmbeddingLoss(margin=config.margin_loss)
         elif config.loss_type == 'contrastive':
             self.loss_func = self._contrastive_loss
+        elif config.loss_type == 'aamsoftmax':
+            self.loss_func = AAMsoftmax(n_class=730, m=0.2, s=30, device=self.device)
         else:
             raise ValueError("Invalid input provided")
         
@@ -139,6 +141,15 @@ class VerifierTrainer:
                 # Calcualte loss
                 loss = self.loss_func(anchor_output, positive_output, negative_output)
             
+            elif self.config.loss_type == 'aamsoftmax':
+                audio_batch = (input_data[0].squeeze(1).permute(0, 2, 1)).to(self.device)
+                labels = input_data[1].to(self.device)
+
+                # Get model output
+                audio_outputs = self.model(audio_batch)
+
+                # Calcualte loss
+                loss = self.loss_func(audio_outputs, labels)
             else:
                 # Get data
                 # input_data shape: [batch_size, 1, feat_dim, seq_len]
@@ -236,15 +247,15 @@ class VerifierTrainer:
 
         print("A checkpoint detected")
         checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        self.model.load_state_dict(checkpoint["model_state"])
+        self.optimizer.load_state_dict(checkpoint["optim_state"])
+        self.scheduler.load_state_dict(checkpoint["scheduler_state"])
+        self.metrics = checkpoint["metrics"]
         self.current_epoch = checkpoint["epoch"]
-        self.model = checkpoint["model_state"]
-        self.optimizer = checkpoint["optim_state"]
-        self.scheduler = checkpoint["scheduler_state"]
-        self.metrics = checkpoint['metrics']
 
         self.best_eer = min(self.metrics['eer'])
         print("The checkpoint loaded")
-        print(f"Starting from epoch {self.current_epoch}\n")
+        print(f"Starting from epoch {self.current_epoch+1}\n")
 
     def _contrastive_loss(self, emb1, emb2, label, margin=0.2):        
         """
