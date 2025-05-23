@@ -47,6 +47,10 @@ class TrainDataset(Dataset):
         self.sample_rate = sample_rate
         self.fixed_length = int(sample_rate * duration)
         self.vad = vad
+        
+        if vad:
+            self.vad_transform = torchaudio.transforms.Vad(sample_rate=self.sample_rate)
+
         if augmentations:
             self.augmentations = Compose([
                 AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.015, p=0.5),
@@ -135,8 +139,7 @@ class TrainDataset(Dataset):
 
         # apply voice activity detection if necessary
         if self.vad:
-            waveform, _ = torchaudio.sox_effects.apply_effects_tensor(
-                waveform, self.sample_rate, [['vad', '-t', '3'], ['rate', str(self.sample_rate)]])
+            waveform = self.vad_transform(waveform)
         else:
             waveform = waveform / waveform.abs().max()
 
@@ -268,6 +271,9 @@ class ValidDataset(Dataset):
         self.fixed_length = int(sample_rate * duration)
         self.vad = vad
 
+        if vad:
+            self.vad_transform = torchaudio.transforms.Vad(sample_rate=self.sample_rate)
+
         self.mfcc_transform = transforms.MFCC(
             sample_rate=self.sample_rate,
             n_mfcc=mfcc_feat_dim,
@@ -302,8 +308,7 @@ class ValidDataset(Dataset):
             waveform = resampler(waveform)
 
         if self.vad:
-            waveform, _ = torchaudio.sox_effects.apply_effects_tensor(
-                waveform, self.sample_rate, [['vad', '-t', '3'], ['rate', str(self.sample_rate)]])
+            waveform = self.vad_transform(waveform)
         else:
             waveform = waveform / waveform.abs().max()
 
@@ -414,10 +419,10 @@ def get_data_loaders(root_path, samples_per_epoch=30000, loss_type='contrastive'
     return train_loader, val_loader                
 
 def get_test_loader(root_path, sample_rate=16000, duration=3, vad=False, batch_size=32, 
-                    num_workers=4, mfcc_feat_dim=80, testset_only=True):
+                    num_workers=4, mfcc_feat_dim=80, testset_only=True, test_only_data="test.csv"):
     
     test_dataset = ValidDataset(
-        dataset_path=os.path.join(root_path, "test.csv"),
+        dataset_path=os.path.join(root_path, test_only_data),
         sample_rate=sample_rate, 
         duration=duration, 
         vad=vad,
