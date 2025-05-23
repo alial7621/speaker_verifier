@@ -24,7 +24,7 @@ class TrainDataset(Dataset):
         samples_per_epoch : int, optional
             number of samples to draw from the dataset per epoch
         loss_type : str, optional
-            the type of loss to use, including 'contrastive', 'triplet', or 'cosineemb'
+            the type of loss to use, including 'contrastive', 'triplet', 'cosineemb', or 'aamsoftmax'
         sample_rate : int, optional
             sample rate of audio files
         duration : int, optional
@@ -70,7 +70,7 @@ class TrainDataset(Dataset):
             }
         )
         
-        assert self.loss_type in ['contrastive', 'triplet', 'cosineemb']
+        assert self.loss_type in ['contrastive', 'triplet', 'cosineemb', 'aamsoftmax']
 
     def _read_speaker_dict(self,root_path,file_path):
         """
@@ -96,6 +96,7 @@ class TrainDataset(Dataset):
         # one for just positive pairs, one for negative pairs
         pos_speaker_to_files = {}
         all_speakers_to_files = {}
+        self.speaker_ids_to_index = {speaker_id: i for i, speaker_id in enumerate(speaker_ids)}
         data_path = os.path.join(root_path, 'data')
 
         # Collect audio file paths for each speaker
@@ -177,6 +178,11 @@ class TrainDataset(Dataset):
         tuple
             audio file 1, audio file 2, label
         """
+        if self.loss_type == 'aamsoftmax':
+            speaker_id = random.choice(list(self.all_speakers_to_files.keys()))
+            file = random.choice(self.all_speakers_to_files[speaker_id])
+            return self._preprocess(file), torch.tensor(self.speaker_ids_to_index[speaker_id], dtype=torch.long)
+        
         if self.loss_type == 'contrastive' or self.loss_type == 'cosineemb':
             # random boolean to choose positive pair or negative pair
             pos_or_neg = random.choice([True, False])
