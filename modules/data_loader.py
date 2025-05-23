@@ -231,7 +231,8 @@ class TrainDataset(Dataset):
         anchor_id = random.choice(list(self.pos_speaker_to_files.keys()))
 
         # choose negative speaker
-        temp_speakers_list = list(self.all_speakers_to_files.keys()).remove(anchor_id)
+        temp_speakers_list = list(self.all_speakers_to_files.keys())
+        temp_speakers_list.remove(anchor_id)
         negative_id = random.choice(temp_speakers_list)
         
         # choose positive and negative files
@@ -406,3 +407,42 @@ def get_data_loaders(root_path, samples_per_epoch=30000, loss_type='contrastive'
     
     return train_loader, val_loader                
 
+def get_test_loader(root_path, sample_rate=16000, duration=3, vad=False, batch_size=32, 
+                    num_workers=4, mfcc_feat_dim=80, testset_only=True):
+    
+    test_dataset = ValidDataset(
+        dataset_path=os.path.join(root_path, "test.csv"),
+        sample_rate=sample_rate, 
+        duration=duration, 
+        vad=vad,
+        mfcc_feat_dim=mfcc_feat_dim
+    )
+
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers
+    )
+
+    if testset_only:
+        return test_loader
+    
+    else:
+        valid_dataset = ValidDataset(
+        dataset_path=os.path.join(root_path, "validation.csv"),
+        sample_rate=sample_rate, 
+        duration=duration, 
+        vad=vad,
+        mfcc_feat_dim=mfcc_feat_dim
+    )
+    
+    val_loader = DataLoader(
+        valid_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers
+    )
+
+    return val_loader, test_loader
+        
