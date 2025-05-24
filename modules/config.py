@@ -31,8 +31,7 @@ def get_argparser():
     train_parser.add_argument("--embd_dim", type=int, default=192, help="Output embed size")
     
     # Train
-    train_parser.add_argument("--no_manual_seed", dest="manual_seed", action="store_false", 
-                              help="Whether use manual seed or not")
+    train_parser.add_argument("--manual_seed", action="store_true", help="Whether use manual seed or not")
     train_parser.add_argument("--seed", type=int, default=72322)
     train_parser.add_argument("--batch_size", type=int, default=32)
     train_parser.add_argument("--samples_per_epoch", type=int, default=20000,
@@ -42,7 +41,7 @@ def get_argparser():
                               help="Start from the last checkpoint. Always refer as last_model.pt")
     
     # Optimizer and scheduler
-    train_parser.add_argument("--loss_type", type=str, default="contrastive",
+    train_parser.add_argument("--loss_type", type=str, default="triplet",
                               help="Choose the loss function, possible inputs:[contrastive, triplet, cosineemb, aamsoftmax]")
     train_parser.add_argument("--margin_loss", type=float, default=0.2,
                               help="The margin, using in the loss function")
@@ -69,7 +68,7 @@ def get_argparser():
     test_parser.add_argument("--dataset_dir", type=str, default="./dataset", 
                              help="path to the testset csv file")
     test_parser.add_argument("--data_dir", type=str, default="/dataset/data")
-    test_parser.add_argument("--checkpoint", type=str, default="./checkpoints/models/best.pt")
+    test_parser.add_argument("--checkpoint", type=str, default="./checkpoints/models/best_triplet.pt")
     
     test_parser.add_argument("--sample_rate", type=int, default=16000, help="Audio sample rate")
     test_parser.add_argument("--duration", type=int, default=3,
