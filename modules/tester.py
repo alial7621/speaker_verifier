@@ -1,15 +1,16 @@
 import os
 
 import numpy as np
-from sklearn.metrics import roc_curve
-from tqdm import tqdm
 import torch
-import torchaudio
 import torch.nn as nn
+import torchaudio
+from sklearn.metrics import roc_curve
 from torchaudio import transforms
 from torchmetrics.classification import BinaryEER
+from tqdm import tqdm
 
 from modules.model import ECAPA_TDNN
+
 
 class SpeakerVerification():
     def __init__(self, config, device):

@@ -10,6 +10,7 @@ from tqdm import tqdm
 from modules.aamsoftmax import AAMsoftmax
 from modules.model import ECAPA_TDNN
 
+
 class VerifierTrainer:
     """
     Class for training a speaker verification model.

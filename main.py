@@ -6,9 +6,8 @@ import torch
 
 from modules import config
 from modules.data_loader import get_data_loaders, get_test_loader
+from modules.tester import SpeakerVerification, VerifierTester
 from modules.trainer import VerifierTrainer
-from modules.tester import SpeakerVerification
-from modules.tester import VerifierTester
 from utils.util import plot_metrics
 
 
