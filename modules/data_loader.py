@@ -420,7 +420,35 @@ def get_data_loaders(root_path, samples_per_epoch=30000, loss_type='contrastive'
 
 def get_test_loader(root_path, sample_rate=16000, duration=3, vad=False, batch_size=32, 
                     num_workers=4, mfcc_feat_dim=80, testset_only=True, test_only_data="test.csv"):
-    
+    """
+    Create a test data loader.
+
+    Parameters
+    ----------
+    root_path : str
+        path to the root directory
+    sample_rate : int, optional
+        sample rate of audio files
+    duration : int, optional
+        duration of audio files in seconds
+    vad : bool, optional
+        whether to use voice activity detection on audio files  
+    batch_size : int, optional
+        batch size for training and validation
+    num_workers : int, optional
+        number of workers for training and validation
+    mfcc_feat_dim : int, optional
+        number of mel frequency cepstral coefficients to use
+    testset_only : bool, optional
+        whether to return only the test set
+    test_only_data : str, optional
+        path to the test set CSV file (or validation set CSV file)
+
+    Returns
+    -------
+    test_loader or tuple of test_loader and valid_loader
+    """
+
     test_dataset = ValidDataset(
         dataset_path=os.path.join(root_path, test_only_data),
         sample_rate=sample_rate, 
