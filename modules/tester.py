@@ -13,6 +13,13 @@ from modules.model import ECAPA_TDNN
 
 class SpeakerVerification():
     def __init__(self, config, device):
+        """
+        Initialize the SpeakerVerification class.
+        
+        Args:
+            config: Configuration object containing model and processing parameters
+            device: Device to run the model on (e.g., 'cuda' or 'cpu')
+        """
         self.config = config
         self.device = device
         self.fixed_length = int(config.sample_rate * config.duration)
@@ -35,6 +42,12 @@ class SpeakerVerification():
         )
 
     def model_load(self):
+        """
+        Load and initialize the ECAPA-TDNN model from checkpoint.
+        
+        Raises:
+            ValueError: If the checkpoint file is not found
+        """
         # Initialize Model
         self.model = ECAPA_TDNN(
             in_channels=self.config.mfcc_feat_dim,
@@ -51,11 +64,31 @@ class SpeakerVerification():
         self.model.eval()
 
     def get_spk_emb(self, audio_file):
+        """
+        Extract speaker embedding from an audio file.
+        
+        Args:
+            audio_file (str): Path to the audio file
+            
+        Returns:
+            torch.Tensor: Speaker embedding vector
+        """
         audio_feat = (self._preprocess(audio_file).permute(0, 2, 1)).to(self.device)
         with torch.no_grad():
             return self.model(audio_feat)
 
     def verify(self, audio_file1, audio_file2):
+        """
+        Verify if two audio files are from the same speaker.
+        
+        Args:
+            audio_file1 (str): Path to the first audio file
+            audio_file2 (str): Path to the second audio file
+            
+        Note:
+            Uses cosine similarity to compare speaker embeddings and compares against
+            the threshold specified in config.eer_thresh
+        """
         audio_emb1 = self.get_spk_emb(audio_file1)
         audio_emb2 = self.get_spk_emb(audio_file2)
         
@@ -73,17 +106,22 @@ class SpeakerVerification():
 
     def _preprocess(self, audio_file):
         """
-        Preprocess the audio file.
-
-        Parameters
-        ----------
-        path : str
-            path to the audio file
-
-        Returns
-        -------
-        torch.Tensor
-            preprocessed audio file
+        Preprocess the audio file for speaker verification.
+        
+        Args:
+            audio_file (str): Path to the audio file
+            
+        Returns:
+            torch.Tensor: Preprocessed MFCC features
+            
+        Note:
+            Performs the following preprocessing steps:
+            1. Resampling if necessary
+            2. Voice Activity Detection (if enabled)
+            3. Normalization
+            4. Padding/truncating to fixed length
+            5. MFCC extraction
+            6. Cepstral Mean Normalization
         """
         waveform, sr = torchaudio.load(audio_file)
         if sr != self.config.sample_rate:
@@ -111,6 +149,16 @@ class SpeakerVerification():
 
 class VerifierTester:
     def __init__(self, config, device):
+        """
+        Initialize the VerifierTester class.
+        
+        Args:
+            config: Configuration object containing model and processing parameters
+            device: Device to run the model on (e.g., 'cuda' or 'cpu')
+            
+        Raises:
+            ValueError: If the checkpoint file is not found
+        """
         self.config = config
         self.device = device
         self.optimal_threshold = None
@@ -131,7 +179,15 @@ class VerifierTester:
         self.model.eval()
 
     def validate(self, val_loader):
-
+        """
+        Validate the model on the validation dataset.
+        
+        Args:
+            val_loader: DataLoader containing validation data
+            
+        Note:
+            Calculates EER and optimal threshold on the validation set
+        """
         all_similarities = []
         all_labels = []
         
@@ -167,8 +223,11 @@ class VerifierTester:
         Calculate Equal Error Rate and find the optimal threshold.
         
         Args:
-            similarities: Array of similarity scores
-            labels: Array of true labels (1 for same speaker, 0 for different speakers)
+            similarities (numpy.ndarray): Array of similarity scores
+            labels (numpy.ndarray): Array of true labels (1 for same speaker, 0 for different speakers)
+            
+        Note:
+            Updates self.optimal_threshold with the calculated optimal threshold
         """
         # Calculate ROC curve
         fpr, tpr, thresholds = roc_curve(labels, similarities)
@@ -189,9 +248,11 @@ class VerifierTester:
         Validate the speaker verifier model with the testset.
         
         Args:
-            test_loader: DataLoader for validation data
+            test_loader: DataLoader containing test data
+            
+        Note:
+            Uses either the optimal threshold from validation or the threshold specified in config
         """
-
         test_eer = 0
         
         # Initialize metric
