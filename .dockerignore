@@ -1,0 +1,31 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache
+.coverage
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Data and models (mount as volumes instead)
+dataset/data/     # Large dataset - mounted as read-only volume
+checkpoints/      # Mounted as persistent volume
+
+# Documentation
+README.md
+*.md
+*.docx

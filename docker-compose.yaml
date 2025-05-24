@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  speaker-verifier:
+    build: .
+    image: speaker-verifier:latest
+    container_name: speaker-verifier
+    
+    # GPU support
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    
+    # Volume mounts - only checkpoints directory
+    volumes:
+      - ./checkpoints:/app/checkpoints    # Mount checkpoints directory with models and plots
+      - ./dataset:/app/dataset:ro         # Read-only mount for large dataset
+    
+    # Environment variables
+    environment:
+      - PYTHONPATH=/app
+      - CUDA_VISIBLE_DEVICES=0        # Specify which GPU to use (optional)
+    
+    # Keep container running for interactive use
+    stdin_open: true
+    tty: true
+    
+    # Restart policy
+    restart: unless-stopped
