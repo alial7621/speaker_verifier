@@ -78,6 +78,7 @@ def get_argparser():
     test_parser.add_argument("--batch_size", type=int, default=32)
     test_parser.add_argument("--eer_thresh", type=float, default=None, help="Threshold for EER metric")
     test_parser.add_argument("--find_optim_thresh", action="store_true", help="Find the optimal threshold by validation data")
+    test_parser.add_argument("--onnx_model", action="store_true", help="Using ONNX model")
     test_parser.add_argument("--single_pred", action="store_true", help="Single input prediction")
     test_parser.add_argument("--audio1", type=str, default=None, help="Use in single prediction mode")
     test_parser.add_argument("--audio2", type=str, default=None, help="Use in single prediction mode")
