@@ -26,6 +26,7 @@ speaker_verifier/
 ├── utils/
 │   └── util.py
 ├── main.py
+├── onnx_builder.py
 ├── Dockerfile
 ├── docker-compose.yaml
 ├── .dockerignore
@@ -101,3 +102,31 @@ To compare the similarity between two input audio samples, use the `--single_pre
 python main.py test --single_pred --audio1 path_to_audio1 --audio2 path_to_audio2
 ```
 The `--single_pred` flag enables single prediction mode, and `--audio1` and `--audio2` specify the paths to the input audio files.
+
+## Exporting to ONNX
+The `onnx_builder.py` module is used to export a PyTorch model to ONNX format. To export the model, run:
+```
+python onnx_builder.py
+```
+The module supports the following arguments:
+- `--pt_path`: Path to the PyTorch model (default: `./checkpoints/models/best_triplet.pt`)
+- `--onnx_path`: Path to save the ONNX model (default: `./checkpoints/models/best_triplet.onnx`)
+- `--in_channel`: Input channel for the PyTorch model (default: `80`)
+- `--channels`: Size of middle layers' channels (default: `256`)
+- `--embd_dim`: Size of the output vector (default: `192`)
+
+Example:
+```
+python onnx_builder.py --pt_path ./checkpoints/models/custom_model.pt --onnx_path ./checkpoints/models/custom_model.onnx
+```
+
+### Single Prediction with ONNX Model
+To compare the similarity between two input audio samples using the ONNX model, include the `--onnx_model` flag and specify the path to the ONNX model with `--checkpoint`:
+```
+python main.py test --single_pred --onnx_model --audio1 path_to_audio1 --audio2 path_to_audio2 --checkpoint path_to_onnx_model
+```
+- `--single_pred`: Flag to enable single prediction mode
+- `--onnx_model`: Flag to use the ONNX model instead of the PyTorch model
+- `--audio1`: Path to the first audio sample
+- `--audio2`: Path to the second audio sample
+- `--checkpoint`: Path to the ONNX model (e.g., `./checkpoints/models/best_triplet.onnx`)
