@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import onnxruntime as ort
 import torch
 import torch.nn as nn
 import torchaudio
@@ -29,7 +30,10 @@ class SpeakerVerification():
             self.vad_transform = torchaudio.transforms.Vad(sample_rate=config.sample_rate)
 
         # Load the model
-        self.model_load()
+        if config.onnx_model:
+            self.session = ort.InferenceSession(config.checkpoint)
+        else:
+            self.model_load()
         
         self.mfcc_transform = transforms.MFCC(
             sample_rate=config.sample_rate,
@@ -74,9 +78,14 @@ class SpeakerVerification():
         Returns:
             torch.Tensor: Speaker embedding vector
         """
-        audio_feat = (self._preprocess(audio_file).permute(0, 2, 1)).to(self.device)
-        with torch.no_grad():
-            return self.model(audio_feat)
+        if self.config.onnx_model:
+            audio_feat = (self._preprocess(audio_file).permute(0, 2, 1)).numpy()
+            outputs = self.session.run(None,{"input": audio_feat})
+            return outputs[0]
+        else:
+            audio_feat = (self._preprocess(audio_file).permute(0, 2, 1)).to(self.device)
+            with torch.no_grad():
+                return self.model(audio_feat)
 
     def verify(self, audio_file1, audio_file2):
         """
@@ -94,16 +103,22 @@ class SpeakerVerification():
         audio_emb2 = self.get_spk_emb(audio_file2)
         
         # Calculate similarity
-        similarity = nn.functional.cosine_similarity(audio_emb1, audio_emb2)
+        if self.config.onnx_model:
+            similarity = nn.functional.cosine_similarity(torch.tensor(audio_emb1), 
+                                                         torch.tensor(audio_emb2))
+            similarity = similarity.numpy()[0]
+        else:
+            similarity = nn.functional.cosine_similarity(audio_emb1, audio_emb2)
+            similarity = similarity.cpu().numpy()[0]
 
         if self.config.eer_thresh is None:
             print("Threshold has not been specified, using default: 0.7")
             self.config.eer_thresh = 0.7
 
         if similarity > self.config.eer_thresh:
-            print(f"Verification Confirmed, Similarity Score: {similarity.cpu().numpy()[0]:02f}")
+            print(f"Verification Confirmed, Similarity Score: {similarity:02f}")
         else:
-            print(f"Verification Denied, Similarity Score: {similarity.cpu().numpy()[0]:02f}")
+            print(f"Verification Denied, Similarity Score: {similarity:02f}")
 
     def _preprocess(self, audio_file):
         """
